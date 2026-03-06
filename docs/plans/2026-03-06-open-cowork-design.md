@@ -6,7 +6,7 @@
 
 ## Overview
 
-Open-Cowork is a desktop application that brings agentic AI capabilities for knowledge work. It provides multi-step task execution, sub-agent coordination, file operations with permissions, document generation, and scheduled tasks - all running locally with strong security isolation.
+Open-Cowork is a desktop application that brings agentic AI capabilities for knowledge work. It provides multi-step task execution, sub-agent coordination, file operations with permissions, document generation, computer use (application control, UI automation), and scheduled tasks - all running locally with strong security isolation.
 
 ## High-Level Architecture
 
@@ -75,6 +75,12 @@ User → Electron UI → WebSocket → FastAPI Backend → LLM API
 - Web search (DuckDuckGo API or similar)
 - Code execution (in WASM sandbox)
 - System commands (with permission checks)
+- **Computer use tools:**
+  - Screen capture and analysis (via PIL/Pillow, mss)
+  - Mouse/keyboard control (via pyautogui, pynput)
+  - Application launching and control (via subprocess, psutil)
+  - UI element detection and interaction (via pyautogui, OCR)
+  - Window management (focus, resize, move)
 
 **WASMExecutor:**
 - Embeds Wasmtime runtime
@@ -98,6 +104,7 @@ User → Electron UI → WebSocket → FastAPI Backend → LLM API
 - **Message**: id, session_id, role, content, tool_calls, timestamp
 - **Permission**: path, access_level (read/write/execute), granted_at
 - **ScheduledJob**: id, cron_expression, task_description, enabled, last_run
+- **ComputerUsePermission**: action_type (screenshot/mouse/keyboard/app_launch), granted, scope (global/specific_app)
 
 ## Data Flow & Communication
 
@@ -122,6 +129,7 @@ User → Electron UI → WebSocket → FastAPI Backend → LLM API
    - File operations → Check permissions → Execute
    - Code execution → WASMExecutor → Run in sandbox
    - Document generation → Use Python libraries → Save to disk
+   - Computer use → Check permissions → Execute in native Python (outside WASM)
    ↓
 7. Results aggregated and streamed back to user
    ↓
@@ -201,6 +209,12 @@ WebSocket messages use JSON format:
 - Partial results returned if some sub-agents succeed
 - Clear error attribution (which sub-agent failed, why)
 
+**Computer Use Errors:**
+- Permission denied → Show clear message about what action was blocked
+- Application not found → Suggest alternatives or installation
+- UI element not found → Return screenshot with error, allow retry
+- Timeout on UI operations → Configurable timeout (default 10s per action)
+
 ### 4.2 Security Model
 
 **Permission System:**
@@ -208,6 +222,11 @@ WebSocket messages use JSON format:
 - User grants permissions via UI before first access
 - Permissions persisted in SQLite, can be revoked anytime
 - WASM sandbox enforces permissions at WASI layer
+- **Computer use permissions:**
+  - Screenshot: Allow/Deny (can capture screen)
+  - Mouse/Keyboard: Allow/Deny (can control input devices)
+  - App Launch: Allow/Deny per application or global
+  - Confirmation required for first use of each permission type
 
 **API Key Security:**
 - Keys stored in OS keychain (keyring library for Python)
@@ -226,6 +245,14 @@ WebSocket messages use JSON format:
 - Resource limits prevent DoS (CPU, memory, time)
 - File system access restricted to approved paths
 - No shell command execution without explicit permission
+
+**Computer Use Safety:**
+- All computer use actions run in native Python (outside WASM for OS access)
+- Explicit permission required before first use
+- Rate limiting on mouse/keyboard actions (prevent spam)
+- Screenshot data analyzed by LLM before taking actions
+- User can pause/stop automation at any time via UI
+- Audit log of all computer use actions
 
 ### 4.3 Logging & Debugging
 
@@ -259,6 +286,7 @@ WebSocket messages use JSON format:
 - **WASM sandbox**: Execute Python code in sandbox, verify isolation and permissions
 - **File operations**: Read/write files with permission checks, verify rollback on error
 - **Scheduled tasks**: Create scheduled job, verify execution at correct time
+- **Computer use**: Take screenshot, analyze UI, click button, verify action executed correctly
 
 ### 5.3 Security Tests
 
@@ -266,6 +294,7 @@ WebSocket messages use JSON format:
 - **Resource exhaustion**: Infinite loops, memory bombs, verify limits enforced
 - **Permission bypass**: Attempt operations without granted permissions, verify denied
 - **API key leakage**: Verify keys never logged or exposed in UI
+- **Computer use abuse**: Attempt rapid-fire clicks, verify rate limiting works
 
 ### 5.4 Performance Tests
 
@@ -284,6 +313,9 @@ WebSocket messages use JSON format:
 - [ ] Test scheduled tasks (create, edit, delete, verify execution)
 - [ ] Test error scenarios (API failure, timeout, permission denied)
 - [ ] Verify logs are written correctly
+- [ ] Test computer use: "Take a screenshot and describe what you see"
+- [ ] Test computer use: "Open Calculator app and compute 123 * 456"
+- [ ] Test computer use: "Fill out this form in my browser"
 
 ## Technology Stack
 
@@ -304,6 +336,13 @@ WebSocket messages use JSON format:
 - APScheduler (task scheduling)
 - python-docx, openpyxl, python-pptx (document generation)
 - keyring (secure key storage)
+- **Computer use libraries:**
+  - pyautogui (mouse/keyboard control)
+  - pynput (input monitoring)
+  - mss (fast screenshot capture)
+  - Pillow/PIL (image processing)
+  - pytesseract (OCR for UI element detection)
+  - psutil (process management)
 
 **Development:**
 - pytest (Python testing)
