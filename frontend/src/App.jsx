@@ -5,8 +5,23 @@ function App() {
   const [response, setResponse] = useState('');
 
   const handleSend = async () => {
-    // TODO: Connect to backend API
-    setResponse('Backend not connected yet');
+    if (!message.trim()) return;
+
+    try {
+      const res = await fetch('http://localhost:8000/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: message }),
+      });
+
+      const data = await res.json();
+      setResponse(data.response || 'No response');
+      setMessage('');
+    } catch (error) {
+      setResponse('Error connecting to backend: ' + error.message);
+    }
   };
 
   return (
