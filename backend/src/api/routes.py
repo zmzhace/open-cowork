@@ -5,7 +5,12 @@ import os
 import asyncio
 import json
 
+import logging
+
+logger = logging.getLogger("uvicorn.error")
+
 router = APIRouter()
+
 
 class ChatRequest(BaseModel):
     message: str
@@ -32,7 +37,7 @@ async def chat(request: ChatRequest):
         
         def on_step(step, desc):
             try:
-                safe_desc = desc.encode(os.sys.stdout.encoding or 'utf-8', 'ignore').decode(os.sys.stdout.encoding or 'utf-8', 'ignore')
+                safe_desc = desc.encode('ascii', 'replace').decode('ascii')
                 print(f"  [{step}] {safe_desc}")
             except Exception:
                 pass

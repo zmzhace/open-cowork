@@ -8,6 +8,14 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    frame: false,
+    titleBarStyle: 'hiddenInset',
+    titleBarOverlay: {
+      color: '#fdfdfc',
+      symbolColor: '#737373',
+      height: 40,
+    },
+    backgroundColor: '#fdfdfc',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -46,10 +54,10 @@ ipcMain?.handle('set-mini-mode', (event, isMini) => {
 
     // Shrink to mini size, position at bottom-right
     mainWindow.setBounds({
-      x: screenW - 350,
-      y: screenH - 110,
-      width: 340,
-      height: 100,
+      x: screenW - 370,
+      y: screenH - 140,
+      width: 360,
+      height: 130,
     });
     mainWindow.setAlwaysOnTop(true, 'floating');
     mainWindow.setResizable(false);
