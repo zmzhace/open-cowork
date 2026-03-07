@@ -18,8 +18,8 @@ function createWindow() {
   const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
 
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5174').catch(() => {
-      console.log('Ensure Vite dev server is running on port 5174');
+    mainWindow.loadURL('http://localhost:5173').catch(() => {
+      console.log('Ensure Vite dev server is running on port 5173');
     });
     mainWindow.webContents.openDevTools();
   } else {

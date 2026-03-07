@@ -41,7 +41,10 @@ async def chat(request: ChatRequest):
             
         async def run_task():
             try:
-                print(f"🚀 Starting optimized agent for task: {request.message}")
+                try:
+                    print(f"Starting optimized agent for task: {request.message}".encode('utf-8', 'ignore').decode('utf-8', 'ignore'))
+                except Exception:
+                    pass
                 final_res = await run_agent(
                     task=request.message,
                     api_key=api_key,

@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "main": "main.js",
   "scripts": {
-    "start": "cross-env ELECTRON_RUN_AS_NODE= electron .",
+    "start": "node launch-electron.js",
     "dev": "vite",
     "build": "vite build",
-    "electron:dev": "cross-env ELECTRON_RUN_AS_NODE= electron . --dev"
+    "electron:dev": "node launch-electron.js --dev"
   },
   "dependencies": {
     "electron": "^28.2.0",
