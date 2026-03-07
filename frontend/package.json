@@ -6,7 +6,8 @@
   "scripts": {
     "start": "electron .",
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "electron:dev": "electron . --dev"
   },
   "dependencies": {
     "electron": "^28.2.0",

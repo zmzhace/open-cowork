@@ -15,12 +15,15 @@ function createWindow() {
     }
   });
 
-  // Load index.html
-  mainWindow.loadFile('index.html');
+  const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
 
-  // Open DevTools in development
-  if (process.env.NODE_ENV === 'development') {
+  if (isDev) {
+    mainWindow.loadURL('http://localhost:5174').catch(() => {
+      console.log('Ensure Vite dev server is running on port 5174');
+    });
     mainWindow.webContents.openDevTools();
+  } else {
+    mainWindow.loadFile('dist/index.html');
   }
 
   mainWindow.on('closed', () => {

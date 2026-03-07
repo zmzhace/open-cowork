@@ -29,20 +29,9 @@ const MessageBubble = ({ text, isUser, steps = [] }) => {
           isUser ? 'items-end' : 'items-start'
         }`}
       >
-        {/* Main Text Bubble */}
-        {text && (
-          <div className={`px-5 py-3.5 text-[15px] leading-relaxed rounded-2xl ${
-            isUser 
-              ? 'bg-neutral-100/80 text-text rounded-br-[4px] shadow-sm border border-neutral-200/50' 
-              : 'bg-transparent text-text'
-          }`}>
-             <p className="whitespace-pre-wrap font-sans break-words">{text}</p>
-          </div>
-        )}
-
         {/* Premium Execution Steps Accordion */}
         {!isUser && hasSteps && (
-          <div className="w-full mt-2 border border-black/[0.04] rounded-2xl overflow-hidden transition-all duration-300 relative">
+          <div className="w-full mb-2 border border-black/[0.04] rounded-2xl overflow-hidden transition-all duration-300 relative">
             
             {/* Glass Background */}
             <div className="absolute inset-0 bg-white/40 backdrop-blur-md z-0"></div>
@@ -116,6 +105,17 @@ const MessageBubble = ({ text, isUser, steps = [] }) => {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Main Text Bubble */}
+        {text && (
+          <div className={`px-5 py-3.5 text-[15px] leading-relaxed rounded-2xl ${
+            isUser 
+              ? 'bg-neutral-100/80 text-text rounded-br-[4px] shadow-sm border border-neutral-200/50' 
+              : 'bg-transparent text-text'
+          }`}>
+             <p className="whitespace-pre-wrap font-sans break-words">{text}</p>
           </div>
         )}
       </div>
