@@ -20,24 +20,29 @@ TOOL_SCHEMA = {
         "properties": {
             "action": {
                 "type": "string",
-                "enum": ["screenshot", "click", "double_click", "right_click", "type", "hotkey", "press", "scroll", "move"],
+                "enum": ["screenshot", "click", "double_click", "right_click", "type", "hotkey", "press", "scroll", "move", "drag"],
                 "description": "The action to perform",
             },
-            "x": {"type": "integer", "description": "X coordinate (for click/scroll/move)"},
-            "y": {"type": "integer", "description": "Y coordinate (for click/scroll/move)"},
+            "x": {"type": "integer", "description": "X coordinate (for click/scroll/move/drag)"},
+            "y": {"type": "integer", "description": "Y coordinate (for click/scroll/move/drag)"},
+            "end_x": {"type": "integer", "description": "End X coordinate (for drag)"},
+            "end_y": {"type": "integer", "description": "End Y coordinate (for drag)"},
             "text": {"type": "string", "description": "Text to type (for 'type' action) or key name (for 'press' action)"},
             "keys": {"type": "array", "items": {"type": "string"}, "description": "Key combination (for 'hotkey', e.g. ['ctrl', 'f'])"},
             "amount": {"type": "integer", "description": "Scroll amount (positive=up, negative=down, default -3)"},
+            "monitor": {"type": "integer", "description": "Monitor index (1=primary, 2=secondary, default 1)"},
         },
         "required": ["action"],
     },
 }
 
 
-def _take_screenshot() -> str:
-    """Take screenshot, return base64 PNG."""
+def _take_screenshot(monitor_idx: int = 1) -> str:
+    """Take screenshot, return base64 PNG. Supports multi-monitor."""
     with mss.mss() as sct:
-        monitor = sct.monitors[1]
+        if monitor_idx < 1 or monitor_idx >= len(sct.monitors):
+            monitor_idx = 1
+        monitor = sct.monitors[monitor_idx]
         img = sct.grab(monitor)
         pil_img = Image.frombytes("RGB", img.size, img.bgra, "raw", "BGRX")
         # Resize for efficiency
@@ -57,10 +62,11 @@ def get_screen_size() -> tuple:
 
 
 def execute(action: str, x: int = None, y: int = None, text: str = None,
-            keys: list = None, amount: int = -3, **kwargs) -> dict:
+            keys: list = None, amount: int = -3, monitor: int = 1,
+            end_x: int = None, end_y: int = None, **kwargs) -> dict:
     """Execute a screen action."""
     if action == "screenshot":
-        img_b64 = _take_screenshot()
+        img_b64 = _take_screenshot(monitor)
         w, h = get_screen_size()
         return {
             "type": "screenshot",
@@ -72,14 +78,17 @@ def execute(action: str, x: int = None, y: int = None, text: str = None,
 
     elif action == "click":
         pyautogui.click(x, y)
+        time.sleep(0.3)  # Wait for UI to respond
         return {"result": f"Clicked at ({x}, {y})"}
 
     elif action == "double_click":
         pyautogui.doubleClick(x, y)
+        time.sleep(0.3)
         return {"result": f"Double-clicked at ({x}, {y})"}
 
     elif action == "right_click":
         pyautogui.rightClick(x, y)
+        time.sleep(0.3)
         return {"result": f"Right-clicked at ({x}, {y})"}
 
     elif action == "type":
@@ -90,18 +99,29 @@ def execute(action: str, x: int = None, y: int = None, text: str = None,
 
     elif action == "hotkey":
         pyautogui.hotkey(*keys)
+        time.sleep(0.2)
         return {"result": f"Pressed hotkey: {'+'.join(keys)}"}
 
     elif action == "press":
         pyautogui.press(text)
+        time.sleep(0.2)
         return {"result": f"Pressed key: {text}"}
 
     elif action == "scroll":
         pyautogui.scroll(amount, x=x, y=y)
+        time.sleep(0.3)
         return {"result": f"Scrolled {amount} at ({x}, {y})"}
 
     elif action == "move":
         pyautogui.moveTo(x, y)
         return {"result": f"Moved cursor to ({x}, {y})"}
+
+    elif action == "drag":
+        if end_x is not None and end_y is not None:
+            pyautogui.moveTo(x, y)
+            pyautogui.drag(end_x - x, end_y - y, duration=0.5)
+            time.sleep(0.3)
+            return {"result": f"Dragged from ({x}, {y}) to ({end_x}, {end_y})"}
+        return {"error": "drag requires end_x and end_y"}
 
     return {"error": f"Unknown action: {action}"}
