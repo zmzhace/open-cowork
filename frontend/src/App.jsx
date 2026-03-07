@@ -8,7 +8,7 @@ function App() {
     if (!message.trim()) return;
 
     try {
-      const res = await fetch('http://localhost:8000/chat', {
+      const res = await fetch('http://localhost:8080/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
