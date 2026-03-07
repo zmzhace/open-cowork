@@ -33,7 +33,7 @@ function App() {
 
     try {
       // TODO: Connect to backend actual endpoint when ready
-      const res = await fetch('http://localhost:8080/chat', {
+      const res = await fetch('http://localhost:8000/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -64,9 +64,9 @@ function App() {
 
       {/* Main Chat Area */}
       <main className="flex-1 flex flex-col min-w-0 bg-background relative">
-        {/* Top Title Bar (Drag Region) */}
-        <header className="h-16 flex items-center px-6 border-b border-border bg-surface/50 backdrop-blur-md z-10 drag-region shrink-0">
-          <h2 className="text-lg font-medium text-text">New Thread</h2>
+        {/* Top Title Bar */}
+        <header className="h-16 flex items-center px-6 border-b border-border bg-surface/50 backdrop-blur-md z-10 shrink-0 drag-region">
+          <h2 className="text-lg font-medium text-text no-drag-region">New Thread</h2>
         </header>
 
         {/* Messages List */}

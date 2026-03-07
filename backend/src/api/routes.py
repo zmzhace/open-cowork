@@ -1,9 +1,7 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 from src.llm.claude_provider import ClaudeProvider
-from src.agent_manager import AgentManager
-from src.tools.registry import ToolRegistry
-from src.tools import WeChatSendMessageTool
+from src.llm.claude_provider import ClaudeProvider
 import os
 
 router = APIRouter()
@@ -34,16 +32,21 @@ async def chat(request: ChatRequest):
             base_url=base_url
         )
 
-        # Set up Tool Registry and register tools
-        registry = ToolRegistry()
-        registry.register(WeChatSendMessageTool())
-
-        # Use AgentManager instead of calling provider directly to handle tool executions
-        agent = AgentManager(provider=provider, tool_registry=registry)
+        # Use optimized computer_agent instead of legacy AgentManager
+        from src.agent.computer_agent import run_agent
         
-        # Execute the task
-        response_content = await agent.execute_task(request.message)
-
+        # Log the task initiation
+        print(f"🚀 Starting optimized agent for task: {request.message}")
+        
+        # Execute the task using the optimized agent
+        response_content = await run_agent(
+            task=request.message,
+            api_key=api_key,
+            base_url=base_url,
+            model="claude-sonnet-4-6",
+            on_step=lambda step, desc: print(f"  [{step}] {desc}")
+        )
+        
         return {"response": response_content}
 
     except Exception as e:

@@ -3,10 +3,10 @@ import { MessageSquare, Settings, PlusCircle, Sparkles, Zap } from 'lucide-react
 
 const Sidebar = () => {
   return (
-    <aside className="w-64 bg-surface border-r border-border h-full flex flex-col drag-region">
-      {/* Header */}
-      <div className="h-16 flex items-center px-4 border-b border-border">
-        <div className="flex items-center gap-2.5 text-text pl-1">
+    <aside className="w-64 bg-surface border-r border-border h-full flex flex-col">
+      {/* Header (Drag Region) */}
+      <div className="h-16 flex items-center px-4 border-b border-border drag-region">
+        <div className="flex items-center gap-2.5 text-text pl-1 no-drag-region">
           <div className="w-7 h-7 rounded-[0.4rem] bg-primary/10 flex items-center justify-center border border-primary/20 shadow-sm">
             <Sparkles className="w-4 h-4 text-primary" strokeWidth={2.5} />
           </div>

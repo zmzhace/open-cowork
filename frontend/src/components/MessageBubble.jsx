@@ -24,8 +24,8 @@ const MessageBubble = ({ text, isUser }) => {
 
       {/* Avatar (User Side) */}
       {isUser && (
-        <div className="w-8 h-8 rounded-full bg-neutral-200 flex items-center justify-center shrink-0 border border-border">
-          <User className="w-5 h-5 text-neutral-500" />
+        <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center shrink-0 border border-primary/20 shadow-sm mt-0.5">
+          <User className="w-5 h-5" />
         </div>
       )}
     </div>
