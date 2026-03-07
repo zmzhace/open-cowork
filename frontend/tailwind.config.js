@@ -10,15 +10,17 @@ export default {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       colors: {
-        background: '#0a0a0a',
-        surface: '#171717',
-        primary: '#6366f1', // Indigo
-        'primary-hover': '#4f46e5',
-        border: '#262626',
-        text: '#ededed',
-        'text-muted': '#a3a3a3',
+        background: 'var(--color-background)',
+        surface: 'var(--color-surface)',
+        primary: 'var(--color-primary)',
+        'primary-hover': 'var(--color-primary-hover)',
+        border: 'var(--color-border)',
+        text: 'var(--color-text)',
+        'text-muted': 'var(--color-text-muted)',
       }
     },
   },
-  plugins: [],
+  plugins: [
+    require('tailwindcss-animate'),
+  ],
 }
