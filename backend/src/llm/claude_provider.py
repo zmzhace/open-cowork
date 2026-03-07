@@ -4,10 +4,16 @@ from src.llm.base import LLMProvider, LLMResponse
 
 
 class ClaudeProvider(LLMProvider):
-    def __init__(self, api_key: str, model: str = "claude-sonnet-4-6"):
+    def __init__(self, api_key: str, model: str = "claude-sonnet-4-6", base_url: Optional[str] = None):
         self.api_key = api_key
         self.model = model
-        self.client = AsyncAnthropic(api_key=api_key)
+        self.base_url = base_url
+
+        # Create client with custom base_url if provided
+        if base_url:
+            self.client = AsyncAnthropic(api_key=api_key, base_url=base_url)
+        else:
+            self.client = AsyncAnthropic(api_key=api_key)
 
     async def chat(
         self,
