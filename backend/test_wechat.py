@@ -19,7 +19,7 @@ def log_step(step_num, desc):
 
 
 async def main():
-    task = "打开微信，找到文件传输助手，发送一条消息：你好，这是自动化测试"
+    task = "打开微信，找到李嘉俊，发送一条消息：你好，这是自动化测试"
     print(f"🎯 Task: {task}", flush=True)
     print("=" * 60, flush=True)
 

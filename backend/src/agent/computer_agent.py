@@ -70,7 +70,7 @@ async def run_agent(
     api_key: Optional[str] = None,
     base_url: Optional[str] = None,
     model: str = "claude-sonnet-4-6",
-    max_iterations: int = 20,
+    max_iterations: int = 50,
     on_step: callable = None,
 ) -> str:
     """
