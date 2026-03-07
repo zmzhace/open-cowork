@@ -32,7 +32,7 @@ function createWindow() {
 }
 
 // Handle mini mode toggle from renderer
-ipcMain.handle('set-mini-mode', (event, isMini) => {
+ipcMain?.handle('set-mini-mode', (event, isMini) => {
   if (!mainWindow) return;
 
   if (isMini) {

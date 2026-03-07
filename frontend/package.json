@@ -1,13 +1,12 @@
 {
   "name": "open-cowork-frontend",
   "version": "0.1.0",
-  "type": "module",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
+    "start": "cross-env ELECTRON_RUN_AS_NODE= electron .",
     "dev": "vite",
     "build": "vite build",
-    "electron:dev": "electron . --dev"
+    "electron:dev": "cross-env ELECTRON_RUN_AS_NODE= electron . --dev"
   },
   "dependencies": {
     "electron": "^28.2.0",
@@ -22,6 +21,7 @@
     "@types/react": "^18.2.48",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.27",
+    "cross-env": "^10.1.0",
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.1",
     "typescript": "^5.3.3",
