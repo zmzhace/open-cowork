@@ -7,8 +7,11 @@ import json
 import os
 import time
 import asyncio
+import logging
 from typing import Optional, List, Dict, Any
-from anthropic import AsyncAnthropic
+from anthropic import AsyncAnthropic, APIError, APITimeoutError, RateLimitError
+
+logger = logging.getLogger(__name__)
 
 from src.agent.tools import (
     exec_tool,
@@ -56,21 +59,17 @@ def can_run_parallel(tool_name: str, tool_input: dict) -> bool:
 
 
 async def execute_tool_async(tool_name: str, tool_input: dict) -> dict:
-    """异步执行工具"""
+    """异步执行工具（使用 asyncio.to_thread 替代已弃用的 get_event_loop）"""
     tool_module = TOOLS.get(tool_name)
     if not tool_module:
         return {"error": f"Unknown tool: {tool_name}"}
     
     try:
-        # 在线程池中执行同步工具函数
-        loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(
-            None, 
-            lambda: tool_module.execute(**tool_input)
-        )
+        result = await asyncio.to_thread(tool_module.execute, **tool_input)
         return result
     except Exception as e:
         import traceback
+        logger.error(f"Tool {tool_name} failed: {e}")
         return {
             "error": f"Tool execution failed: {str(e)}",
             "traceback": traceback.format_exc()
@@ -194,12 +193,53 @@ SYSTEM_PROMPT = """你是一个智能计算机操控助手，运行在 Windows �
 """
 
 
+def _cleanup_old_screenshots(messages: list, keep_recent: int = 3):
+    """清理旧的截图数据，只保留最近 N 轮的截图，避免上下文窗口无限膨胀。"""
+    image_msg_indices = []
+    for i, msg in enumerate(messages):
+        if isinstance(msg.get("content"), list):
+            for block in msg["content"]:
+                if isinstance(block, dict):
+                    # Check tool_result with image content
+                    if isinstance(block.get("content"), list):
+                        for sub in block["content"]:
+                            if isinstance(sub, dict) and sub.get("type") == "image":
+                                image_msg_indices.append((i, block, sub))
+    
+    # Remove old screenshots, keep the most recent ones
+    if len(image_msg_indices) > keep_recent:
+        for i, block, sub in image_msg_indices[:-keep_recent]:
+            sub["source"]["data"] = "[screenshot data removed to save context]"
+
+
+async def _call_api_with_retry(client, max_retries: int = 3, **kwargs):
+    """调用 API 并支持指数退避重试（处理 429/5xx 错误）。"""
+    for attempt in range(max_retries):
+        try:
+            return await client.messages.create(**kwargs)
+        except RateLimitError as e:
+            if attempt < max_retries - 1:
+                wait_time = (2 ** attempt) * 1
+                logger.warning(f"Rate limited, retrying in {wait_time}s (attempt {attempt + 1})")
+                await asyncio.sleep(wait_time)
+            else:
+                raise
+        except (APIError, APITimeoutError) as e:
+            if attempt < max_retries - 1:
+                wait_time = (2 ** attempt) * 0.5
+                logger.warning(f"API error: {e}, retrying in {wait_time}s (attempt {attempt + 1})")
+                await asyncio.sleep(wait_time)
+            else:
+                raise
+
+
 async def run_agent(
     task: str,
     api_key: Optional[str] = None,
     base_url: Optional[str] = None,
     model: str = "claude-sonnet-4-6",
     max_iterations: int = 50,
+    max_time_seconds: int = 300,
     on_step: callable = None,
 ) -> str:
     """
@@ -211,6 +251,7 @@ async def run_agent(
         base_url: API base URL (defaults to env var)
         model: Model to use
         max_iterations: Max agent loop iterations
+        max_time_seconds: Total time limit in seconds (default 5 min)
         on_step: Optional callback(step_num, action_desc) for logging
 
     Returns:
@@ -231,14 +272,26 @@ async def run_agent(
 
     # Loop detection
     recent_actions = []
+    start_time = time.monotonic()
 
     for iteration in range(max_iterations):
+        # Total time timeout check
+        elapsed = time.monotonic() - start_time
+        if elapsed > max_time_seconds:
+            if on_step:
+                on_step(iteration + 1, f"⏰ Time limit reached ({max_time_seconds}s)")
+            return f"Time limit reached ({elapsed:.0f}s). Last response: {final_text if 'final_text' in dir() else 'N/A'}"
+
         if on_step:
             on_step(iteration + 1, "thinking...")
 
+        # Cleanup old screenshots to prevent context explosion
+        _cleanup_old_screenshots(messages, keep_recent=3)
+
         try:
-            # Use prompt caching for system prompt and tools
-            response = await client.messages.create(
+            # Use prompt caching for system prompt and tools (with retry)
+            response = await _call_api_with_retry(
+                client,
                 model=model,
                 max_tokens=4096,
                 system=[
@@ -367,6 +420,6 @@ async def run_agent(
         # Send tool results back to Claude
         messages.append({"role": "user", "content": tool_results})
 
-        time.sleep(0.3)
+        await asyncio.sleep(0.3)
 
     return f"Reached max iterations ({max_iterations}). Last response: {final_text}"

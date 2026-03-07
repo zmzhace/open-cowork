@@ -60,7 +60,7 @@ def _find_window(title=None, hwnd=None):
 
 
 def _activate(hwnd):
-    """Bring window to foreground with a real mouse click."""
+    """Bring window to foreground safely (move mouse, no auto-click)."""
     import pyautogui
     import time
 
@@ -75,16 +75,15 @@ def _activate(hwnd):
     user32.keybd_event(0x12, 0, 2, 0)  # Alt up
     user32.BringWindowToTop(hwnd)
 
-    # Get window position and click the center to trigger content rendering
+    # Get window position and move cursor to center (don't click to avoid hitting buttons)
     time.sleep(0.5)
     rect = ctypes.wintypes.RECT()
     user32.GetWindowRect(hwnd, ctypes.byref(rect))
     cx = (rect.left + rect.right) // 2
     cy = (rect.top + rect.bottom) // 2
-    # Only click if window has reasonable dimensions
     if rect.right - rect.left > 50 and rect.bottom - rect.top > 50:
-        pyautogui.click(cx, cy)
-        time.sleep(0.3)
+        pyautogui.moveTo(cx, cy)
+        time.sleep(0.2)
 
     return {"left": rect.left, "top": rect.top, "right": rect.right, "bottom": rect.bottom}
 
@@ -92,9 +91,12 @@ def _activate(hwnd):
 def execute(action: str, title: str = None, hwnd: int = None, **kwargs) -> dict:
     if action == "list":
         windows = _enum_windows()
-        # Filter to windows with actual titles
+        # Filter to windows with actual titles, limit output to save tokens
         named = [w for w in windows if w["title"].strip()]
-        return {"windows": named, "count": len(named)}
+        # Sort by visibility (visible first) and limit to top 30
+        named.sort(key=lambda w: (not w["visible"], w["title"]))
+        named = named[:30]
+        return {"windows": named, "count": len(named), "note": "Showing top 30 windows. Use title filter in focus/minimize/close."}
 
     elif action == "focus":
         w = _find_window(title, hwnd)
