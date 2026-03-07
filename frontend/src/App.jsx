@@ -39,6 +39,13 @@ function App() {
     scrollToBottom();
   }, [messages, isLoading, agentStatus]);
 
+  // Sync mini-mode state with Electron
+  useEffect(() => {
+    if (window.electronAPI?.setMiniMode) {
+      window.electronAPI.setMiniMode(isMiniMode);
+    }
+  }, [isMiniMode]);
+
   const handleSend = async (text) => {
     if (!text.trim()) return;
 
@@ -61,19 +68,19 @@ function App() {
     setIsMiniMode(true);
     setCurrentStepCount(0);
 
-    // Notify Electron to go mini mode if available
-    if (window.electronAPI?.setMiniMode) {
-      window.electronAPI.setMiniMode(true);
-    }
-
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout for initial connection
+
       const res = await fetch('http://localhost:8000/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ message: text }),
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder("utf-8");
@@ -94,7 +101,7 @@ function App() {
                 const data = JSON.parse(line.substring(6));
                 if (data.type === 'step') {
                   setAgentStatus(data.content);
-                    setCurrentStepCount(prev => prev + 1);
+                  setCurrentStepCount(prev => prev + 1);
                   setThreads(prev => prev.map(t => {
                     if (t.id === currentThreadId) {
                       return { ...t, messages: t.messages.map(m => m.id === assistantMsgId ? { ...m, steps: [...(m.steps || []), data.content] } : m) };
@@ -126,17 +133,13 @@ function App() {
         }
       }
     } catch (error) {
-      const fetchErrorMsg = { id: Date.now() + 1, text: `⚠️ Error connecting to backend: ${error.message}`, isUser: false };
+      const fetchErrorMsg = { id: Date.now() + 2, text: `⚠️ Error connecting to backend: ${error.message}`, isUser: false };
       setThreads(prev => prev.map(t => t.id === currentThreadId ? { ...t, messages: [...t.messages, fetchErrorMsg] } : t));
     } finally {
       setIsLoading(false);
       setAgentStatus('');
       setIsMiniMode(false);
       setCurrentStepCount(0);
-      // Restore Electron window if available
-      if (window.electronAPI?.setMiniMode) {
-        window.electronAPI.setMiniMode(false);
-      }
     }
   };
 
@@ -149,6 +152,20 @@ function App() {
     };
     setThreads(prev => [newThread, ...prev]);
     setCurrentThreadId(newId);
+  };
+
+  const handleDeleteThread = (id) => {
+    if (threads.length <= 1) {
+      alert("At least one thread must remain.");
+      return;
+    }
+    if (window.confirm("Are you sure you want to delete this thread?")) {
+      const remainingThreads = threads.filter(t => t.id !== id);
+      setThreads(remainingThreads);
+      if (currentThreadId === id) {
+        setCurrentThreadId(remainingThreads[0].id);
+      }
+    }
   };
 
   return (
@@ -169,14 +186,40 @@ function App() {
         currentThreadId={currentThreadId} 
         onSelectThread={setCurrentThreadId} 
         onNewThread={handleNewThread}
+        onDeleteThread={handleDeleteThread}
         onOpenSettings={() => setIsSettingsOpen(true)}
       />
 
       {/* Main Chat Area */}
       <main className="flex-1 flex flex-col min-w-0 bg-background relative">
+        {/* Draggable Area at top of main */}
+        <div className="absolute top-0 left-0 right-0 h-8 drag-region z-20 pointer-events-none" />
+        
         {/* Top Title Bar */}
-        <header className="h-16 flex items-center px-6 border-b border-border bg-surface/50 backdrop-blur-md z-10 shrink-0 drag-region">
+        <header className="h-16 flex items-center justify-between px-6 border-b border-border bg-surface/50 backdrop-blur-md z-10 shrink-0 drag-region">
           <h2 className="text-lg font-medium text-text no-drag-region">{currentThread.title}</h2>
+          
+          {/* macOS Traffic Lights (Moved to Right) */}
+          <div className="flex gap-2 no-drag-region">
+            <button 
+              onClick={() => window.electronAPI.minimize()}
+              className="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dea123] hover:brightness-90 transition-all group relative"
+            >
+              <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 text-[8px] text-black/50">−</span>
+            </button>
+            <button 
+              onClick={() => window.electronAPI.maximize()}
+              className="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29] hover:brightness-90 transition-all group relative"
+            >
+              <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 text-[8px] text-black/50">+</span>
+            </button>
+            <button 
+              onClick={() => window.electronAPI.close()}
+              className="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e] hover:brightness-90 transition-all group relative"
+            >
+              <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 text-[8px] text-black/50">×</span>
+            </button>
+          </div>
         </header>
 
         {/* Messages List */}

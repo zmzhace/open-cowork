@@ -1,5 +1,4 @@
-import React from 'react';
-import { Bot, Maximize2 } from 'lucide-react';
+import { Sparkles, Maximize2 } from 'lucide-react';
 
 const FloatingStatus = ({ status, stepCount, onExpand }) => {
   // Parse step info from status text
@@ -22,7 +21,7 @@ const FloatingStatus = ({ status, stepCount, onExpand }) => {
         <div className="flex items-center gap-3 min-w-0 flex-1">
           {/* Animated agent icon */}
           <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center shrink-0 border border-primary/20">
-            <Bot className="w-4 h-4 text-primary animate-pulse" strokeWidth={2.5} />
+            <Sparkles className="w-4 h-4 text-primary animate-pulse" strokeWidth={2.5} />
           </div>
 
           {/* Status text */}

@@ -1,12 +1,12 @@
 import React from 'react';
 import { MessageSquare, Settings, PlusCircle, Sparkles, Zap, Trash2 } from 'lucide-react';
 
-const Sidebar = ({ threads = [], currentThreadId, onSelectThread, onNewThread, onOpenSettings }) => {
+const Sidebar = ({ threads = [], currentThreadId, onSelectThread, onNewThread, onDeleteThread, onOpenSettings }) => {
   return (
     <aside className="w-64 bg-surface border-r border-border h-full flex flex-col">
       {/* Header (Drag Region) */}
       <div className="h-16 flex items-center px-4 border-b border-border drag-region">
-        <div className="flex items-center gap-2.5 text-text pl-1 no-drag-region">
+        <div className="flex items-center gap-2.5 text-text pl-1 no-drag-region mx-auto">
           <div className="w-7 h-7 rounded-[0.4rem] bg-primary/10 flex items-center justify-center border border-primary/20 shadow-sm">
             <Sparkles className="w-4 h-4 text-primary" strokeWidth={2.5} />
           </div>
@@ -34,18 +34,30 @@ const Sidebar = ({ threads = [], currentThreadId, onSelectThread, onNewThread, o
         {threads.map((thread) => {
           const isActive = thread.id === currentThreadId;
           return (
-            <button 
-              key={thread.id}
-              onClick={() => onSelectThread(thread.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors border group ${
-                isActive 
-                  ? 'bg-neutral-100 text-text border-transparent font-medium' 
-                  : 'text-text-muted hover:bg-neutral-50 hover:text-text border-transparent'
-              }`}
-            >
-              <MessageSquare className={`w-4 h-4 shrink-0 ${isActive ? 'text-primary' : 'text-text-muted group-hover:text-text'}`} />
-              <span className="text-sm truncate flex-1">{thread.title || 'New Thread'}</span>
-            </button>
+            <div key={thread.id} className="group relative">
+              <button 
+                onClick={() => onSelectThread(thread.id)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors border ${
+                  isActive 
+                    ? 'bg-neutral-100 text-text border-transparent font-medium' 
+                    : 'text-text-muted hover:bg-neutral-50 hover:text-text border-transparent'
+                }`}
+              >
+                <MessageSquare className={`w-4 h-4 shrink-0 ${isActive ? 'text-primary' : 'text-text-muted group-hover:text-text'}`} />
+                <span className="text-sm truncate flex-1 pr-6">{thread.title || 'New Thread'}</span>
+              </button>
+              
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteThread(thread.id);
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-text-muted hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity rounded-md hover:bg-red-50"
+                title="Delete Thread"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
           );
         })}
       </div>
@@ -62,7 +74,7 @@ const Sidebar = ({ threads = [], currentThreadId, onSelectThread, onNewThread, o
         <div className="mt-4 flex items-center gap-2 px-3">
           <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ring-2 ring-emerald-500/20"></div>
           <span className="text-xs text-text-muted font-medium flex items-center gap-1">
-            Agent <Zap className="w-3 h-3 text-yellow-500" /> V1
+            Agent <Sparkles className="w-3 h-3 text-primary" /> V1
           </span>
         </div>
       </div>

@@ -31,7 +31,12 @@ We just completed a major overhaul of the core agent engine, focusing on three p
 *   **File Management**: Secure, async file I/O with permission awareness.
 
 ### 🎨 Premium Interface
-*   **Anthropic-Inspired Light Theme**: Sleek, minimalist UI designed with React 18 and Tailwind CSS 4.0.
+![Open-Cowork UI Preview](assets/app_screenshot.png)
+
+*   **🍏 Apple-Inspired Experience**: Custom macOS-style traffic light window controls (Close, Minimize, Maximize) for a seamless desktop feel.
+*   **🫧 Glassmorphic Design**: Sleek, minimalist UI with backdrop blurs and premium light theme typography (Inter/Outfit).
+*   **🤏 Adaptive Mini-Mode**: Automatic window shrinking during agent execution to stay out of the way, with smooth restoration to original size.
+*   **🧵 Thread Management**: Support for creating and deleting chat threads with local persistence.
 *   **Live Thinking Logs**: Real-time transparency into the agent's internal reasoning and tool calls.
 *   **Ultra-Fast Foundation**: Native Electron implementation for low-latency desktop responsiveness.
 

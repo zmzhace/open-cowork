@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Bot, User, ChevronDown, ChevronRight, Activity, Cpu } from 'lucide-react';
+import { User, ChevronDown, ChevronRight, Activity, Sparkles } from 'lucide-react';
 
 const MessageBubble = ({ text, isUser, steps = [] }) => {
   const [isStepsOpen, setIsStepsOpen] = useState(false);
@@ -19,7 +19,7 @@ const MessageBubble = ({ text, isUser, steps = [] }) => {
       {/* Avatar (Agent Side) */}
       {!isUser && (
         <div className="w-8 h-8 rounded-[10px] bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20 shadow-sm mt-0.5">
-          <Bot className="w-4 h-4 text-primary" strokeWidth={2.5} />
+          <Sparkles className="w-4 h-4 text-primary" strokeWidth={2.5} />
         </div>
       )}
 

@@ -4,4 +4,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   sendMessage: (message) => ipcRenderer.invoke('send-message', message),
   onResponse: (callback) => ipcRenderer.on('response', callback),
   setMiniMode: (isMini) => ipcRenderer.invoke('set-mini-mode', isMini),
+  minimize: () => ipcRenderer.send('window-control', 'minimize'),
+  maximize: () => ipcRenderer.send('window-control', 'maximize'),
+  close: () => ipcRenderer.send('window-control', 'close'),
 });

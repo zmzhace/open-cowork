@@ -38,6 +38,16 @@ def execute(command: str, timeout: int = 30, shell: bool = True, **kwargs) -> di
                 "exit_code": -1,
             }
     
+    # Special handling for Windows 'start' command to ensure it's non-blocking
+    if os.name == 'nt' and cmd_lower.startswith("start "):
+        # subprocess.Popen with shell=True returns immediately for 'start'
+        subprocess.Popen(command, shell=True, cwd=os.path.expanduser("~"))
+        return {
+            "stdout": f"Application launch initiated: {command}",
+            "stderr": "",
+            "exit_code": 0,
+        }
+    
     try:
         result = subprocess.run(
             command,
