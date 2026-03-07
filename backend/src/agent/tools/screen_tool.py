@@ -14,13 +14,13 @@ pyautogui.PAUSE = 0.1
 
 TOOL_SCHEMA = {
     "name": "screen",
-    "description": "Interact with the screen: take screenshots, click, type, scroll, press keys. Coordinates are in actual screen pixels.",
+    "description": "Interact with the screen: take screenshots, click, type, scroll, press keys, and wait. Coordinates are in actual screen pixels.",
     "input_schema": {
         "type": "object",
         "properties": {
             "action": {
                 "type": "string",
-                "enum": ["screenshot", "click", "double_click", "right_click", "type", "hotkey", "press", "scroll", "move", "drag"],
+                "enum": ["screenshot", "click", "double_click", "right_click", "type", "hotkey", "press", "scroll", "move", "drag", "wait"],
                 "description": "The action to perform",
             },
             "x": {"type": "integer", "description": "X coordinate (for click/scroll/move/drag)"},
@@ -29,7 +29,7 @@ TOOL_SCHEMA = {
             "end_y": {"type": "integer", "description": "End Y coordinate (for drag)"},
             "text": {"type": "string", "description": "Text to type (for 'type' action) or key name (for 'press' action)"},
             "keys": {"type": "array", "items": {"type": "string"}, "description": "Key combination (for 'hotkey', e.g. ['ctrl', 'f'])"},
-            "amount": {"type": "integer", "description": "Scroll amount (positive=up, negative=down, default -3)"},
+            "amount": {"type": "integer", "description": "Scroll amount (positive=up, negative=down, default -3) OR wait amount in seconds (for 'wait' action)"},
             "monitor": {"type": "integer", "description": "Monitor index (1=primary, 2=secondary, default 1)"},
         },
         "required": ["action"],
@@ -123,5 +123,10 @@ def execute(action: str, x: int = None, y: int = None, text: str = None,
             time.sleep(0.3)
             return {"result": f"Dragged from ({x}, {y}) to ({end_x}, {end_y})"}
         return {"error": "drag requires end_x and end_y"}
+
+    elif action == "wait":
+        wait_time = amount if amount > 0 else 2
+        time.sleep(wait_time)
+        return {"result": f"Waited for {wait_time} seconds."}
 
     return {"error": f"Unknown action: {action}"}

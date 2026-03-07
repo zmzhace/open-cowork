@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import MessageBubble from './components/MessageBubble';
 import ChatInput from './components/ChatInput';
+import FloatingStatus from './components/FloatingStatus';
 
 function App() {
   const [threads, setThreads] = useState(() => {
@@ -17,6 +18,8 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [agentStatus, setAgentStatus] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isMiniMode, setIsMiniMode] = useState(false);
+  const [currentStepCount, setCurrentStepCount] = useState(0);
   const messagesEndRef = useRef(null);
 
   const currentThread = threads.find(t => t.id === currentThreadId) || threads[0];
@@ -55,6 +58,13 @@ function App() {
 
     setIsLoading(true);
     setAgentStatus('Initializing agent...');
+    setIsMiniMode(true);
+    setCurrentStepCount(0);
+
+    // Notify Electron to go mini mode if available
+    if (window.electronAPI?.setMiniMode) {
+      window.electronAPI.setMiniMode(true);
+    }
 
     try {
       const res = await fetch('http://localhost:8000/chat', {
@@ -84,6 +94,7 @@ function App() {
                 const data = JSON.parse(line.substring(6));
                 if (data.type === 'step') {
                   setAgentStatus(data.content);
+                    setCurrentStepCount(prev => prev + 1);
                   setThreads(prev => prev.map(t => {
                     if (t.id === currentThreadId) {
                       return { ...t, messages: t.messages.map(m => m.id === assistantMsgId ? { ...m, steps: [...(m.steps || []), data.content] } : m) };
@@ -120,6 +131,12 @@ function App() {
     } finally {
       setIsLoading(false);
       setAgentStatus('');
+      setIsMiniMode(false);
+      setCurrentStepCount(0);
+      // Restore Electron window if available
+      if (window.electronAPI?.setMiniMode) {
+        window.electronAPI.setMiniMode(false);
+      }
     }
   };
 
@@ -135,7 +152,17 @@ function App() {
   };
 
   return (
-    <div className="flex h-screen w-full bg-background overflow-hidden text-text font-sans">
+    <>
+    {/* Floating Mini Status (visible in mini mode) */}
+    {isMiniMode && (
+      <FloatingStatus
+        status={agentStatus}
+        stepCount={currentStepCount}
+        onExpand={() => setIsMiniMode(false)}
+      />
+    )}
+
+    <div className={`flex h-screen w-full bg-background overflow-hidden text-text font-sans transition-opacity duration-300 ${isMiniMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
       {/* Sidebar */}
       <Sidebar 
         threads={threads} 
@@ -223,6 +250,7 @@ function App() {
         </div>
       )}
     </div>
+    </>
   );
 }
 
