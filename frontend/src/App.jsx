@@ -190,11 +190,6 @@ function App() {
         onOpenSettings={() => setIsSettingsOpen(true)}
       />
 
-      {/* Main Chat Area */}
-      <main className="flex-1 flex flex-col min-w-0 bg-background relative">
-        {/* Draggable Area at top of main */}
-        <div className="absolute top-0 left-0 right-0 h-8 drag-region z-20 pointer-events-none" />
-        
         {/* Top Title Bar */}
         <header className="h-16 flex items-center justify-between px-6 border-b border-border bg-surface/50 backdrop-blur-md z-10 shrink-0 drag-region">
           <h2 className="text-lg font-medium text-text no-drag-region">{currentThread.title}</h2>

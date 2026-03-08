@@ -25,7 +25,8 @@ We just completed a major overhaul of the core agent engine, focusing on three p
 ## ✨ Core Features
 
 ### 🛠️ Advanced Toolset
-*   **Precise GUI Control**: High-fidelity mouse/keyboard automation with coordinate scaling for all DPIs.
+*   **Native MCP UI Automation**: Seamless integration with the `Windows-MCP` protocol, allowing the agent to intelligently bypass legacy screenshot tools and interact directly with the underlying UI trees of Windows applications for extreme speed and precision.
+*   **Precise GUI Control**: High-fidelity mouse/keyboard automation with coordinate scaling for all DPIs when visual fallback is required.
 *   **System Orchestration**: Deep integration with Windows APIs for process, window, and clipboard management.
 *   **App Discovery**: registry-based application path resolution for instant launching.
 *   **File Management**: Secure, async file I/O with permission awareness.
