@@ -23,6 +23,7 @@ from src.agent.tools import (
     app_finder_tool,
 )
 from src.agent.mcp_client import mcp_client
+from src.agent.skill_manager import SkillManager
 
 # All available manual tools
 TOOLS = {
@@ -334,6 +335,18 @@ async def run_agent(
     else:
         client = AsyncAnthropic(api_key=api_key)
 
+    # Load OpenClaw-style Skills dynamically
+    # Assuming backend root is the parent of src
+    backend_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    skill_manager = SkillManager(root_dir=backend_root)
+    skill_manager.load_skills()
+    skills_prompt_addition = skill_manager.get_skills_prompt()
+
+    # Inject skills into the system prompt
+    dynamic_system_prompt = SYSTEM_PROMPT
+    if skills_prompt_addition:
+        dynamic_system_prompt = f"{skills_prompt_addition}\n\n{SYSTEM_PROMPT}"
+
     messages = [{"role": "user", "content": task}]
 
     # Loop detection
@@ -360,7 +373,7 @@ async def run_agent(
                 client,
                 model=model,
                 max_tokens=4096,
-                system=SYSTEM_PROMPT,
+                system=dynamic_system_prompt,
                 messages=messages,
                 tools=active_tools,
             )

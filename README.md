@@ -26,6 +26,7 @@ We just completed a major overhaul of the core agent engine, focusing on three p
 
 ### 🛠️ Advanced Toolset
 *   **Native MCP UI Automation**: Seamless integration with the `Windows-MCP` protocol, allowing the agent to intelligently bypass legacy screenshot tools and interact directly with the underlying UI trees of Windows applications for extreme speed and precision.
+*   **AgentSkills Integration**: Dynamically loads `SKILL.md` files from a local `skills/` directory to expand the agent's contextual knowledge, behavioral rules, and specific workflows seamlessly into its operational prompt, heavily inspired by OpenClaw.
 *   **Precise GUI Control**: High-fidelity mouse/keyboard automation with coordinate scaling for all DPIs when visual fallback is required.
 *   **System Orchestration**: Deep integration with Windows APIs for process, window, and clipboard management.
 *   **App Discovery**: registry-based application path resolution for instant launching.
