@@ -7,8 +7,8 @@ const Sidebar = ({ threads = [], currentThreadId, onSelectThread, onNewThread, o
       {/* Header (Drag Region) */}
       <div className="h-16 flex items-center px-4 border-b border-border drag-region">
         <div className="flex items-center gap-2.5 text-text pl-1 no-drag-region mx-auto">
-          <div className="w-7 h-7 rounded-[0.4rem] bg-primary/10 flex items-center justify-center border border-primary/20 shadow-sm">
-            <Sparkles className="w-4 h-4 text-primary" strokeWidth={2.5} />
+          <div className="w-7 h-7 rounded-[0.4rem] flex items-center justify-center bg-black shadow-sm">
+            <div className="w-3.5 h-3.5 bg-white rounded-sm"></div>
           </div>
           <span className="font-semibold text-[17px] tracking-tight">Open-Cowork</span>
         </div>
@@ -68,13 +68,13 @@ const Sidebar = ({ threads = [], currentThreadId, onSelectThread, onNewThread, o
           onClick={onOpenSettings}
           className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-text hover:bg-neutral-100 transition-colors"
         >
-          <Settings className="w-4 h-4 text-text-muted" />
-          <span className="text-sm font-medium">Settings</span>
+          <Sparkles className="w-4 h-4 text-primary" />
+          <span className="text-sm font-medium">Settings (Features)</span>
         </button>
         <div className="mt-4 flex items-center gap-2 px-3">
           <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ring-2 ring-emerald-500/20"></div>
           <span className="text-xs text-text-muted font-medium flex items-center gap-1">
-            Agent <Sparkles className="w-3 h-3 text-primary" /> V1
+            Agent V1
           </span>
         </div>
       </div>
