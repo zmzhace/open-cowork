@@ -20,6 +20,12 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMiniMode, setIsMiniMode] = useState(false);
   const [currentStepCount, setCurrentStepCount] = useState(0);
+  
+  // Settings State
+  const [apiUrl, setApiUrl] = useState(() => localStorage.getItem('opencowork_api_url') || '');
+  const [modelName, setModelName] = useState(() => localStorage.getItem('opencowork_model') || '');
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('opencowork_api_key') || '');
+
   const messagesEndRef = useRef(null);
 
   const currentThread = threads.find(t => t.id === currentThreadId) || threads[0];
@@ -29,6 +35,12 @@ function App() {
     localStorage.setItem('opencowork_threads', JSON.stringify(threads));
     localStorage.setItem('opencowork_current_thread', JSON.stringify(currentThreadId));
   }, [threads, currentThreadId]);
+
+  useEffect(() => {
+    localStorage.setItem('opencowork_api_url', apiUrl);
+    localStorage.setItem('opencowork_model', modelName);
+    localStorage.setItem('opencowork_api_key', apiKey);
+  }, [apiUrl, modelName, apiKey]);
 
   // Auto-scroll to bottom of messages
   const scrollToBottom = () => {
@@ -72,12 +84,19 @@ function App() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout for initial connection
 
+      const payload = {
+        message: text,
+        base_url: apiUrl.trim() !== '' ? apiUrl.trim() : null,
+        model: modelName.trim() !== '' ? modelName.trim() : null,
+        api_key: apiKey.trim() !== '' ? apiKey.trim() : null
+      };
+
       const res = await fetch('http://localhost:8000/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify(payload),
         signal: controller.signal
       });
       clearTimeout(timeoutId);
@@ -190,6 +209,8 @@ function App() {
         onOpenSettings={() => setIsSettingsOpen(true)}
       />
 
+      {/* Main Chat Area */}
+      <main className="flex-1 flex flex-col relative h-full min-w-0">
         {/* Top Title Bar */}
         <header className="h-16 flex items-center justify-between px-6 border-b border-border bg-surface/50 backdrop-blur-md z-10 shrink-0 drag-region">
           <h2 className="text-lg font-medium text-text no-drag-region">{currentThread.title}</h2>
@@ -272,13 +293,36 @@ function App() {
             <div className="p-6 space-y-4">
               <div className="space-y-1">
                 <label className="text-sm font-medium text-text">API Base URL</label>
-                <input type="text" placeholder="http://127.0.0.1:8000" disabled className="w-full bg-neutral-100 border border-border rounded-lg px-3 py-2 text-sm text-text-muted focus:outline-none" />
-                <p className="text-xs text-text-muted">Currently configured via .env</p>
+                <input 
+                  type="text" 
+                  placeholder="e.g. https://api.anthropic.com" 
+                  value={apiUrl}
+                  onChange={(e) => setApiUrl(e.target.value)}
+                  className="w-full bg-neutral-100 border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow" 
+                />
+                <p className="text-xs text-text-muted">Leave empty to use backend .env default.</p>
               </div>
               <div className="space-y-1">
                 <label className="text-sm font-medium text-text">Default Model</label>
-                <input type="text" placeholder="claude-sonnet-4-6" disabled className="w-full bg-neutral-100 border border-border rounded-lg px-3 py-2 text-sm text-text-muted focus:outline-none" />
-                <p className="text-xs text-text-muted">Agent will route desktop automation requests automatically.</p>
+                <input 
+                  type="text" 
+                  placeholder="e.g. claude-sonnet-4-6" 
+                  value={modelName}
+                  onChange={(e) => setModelName(e.target.value)}
+                  className="w-full bg-neutral-100 border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow" 
+                />
+                <p className="text-xs text-text-muted">Currently active model used by the agent.</p>
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-text">API Key</label>
+                <input 
+                  type="password" 
+                  placeholder="sk-ant-..." 
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  className="w-full bg-neutral-100 border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow" 
+                />
+                <p className="text-xs text-text-muted">Optional local override for backend .env.</p>
               </div>
             </div>
             <div className="px-6 py-4 bg-neutral-50 border-t border-border flex justify-end">
