@@ -9,16 +9,31 @@ import ctypes.wintypes
 import os
 import base64
 import json
-import mss
 import io
+import platform
+import mss
 from anthropic import AsyncAnthropic
 
 
+IS_WINDOWS = platform.system() == "Windows"
+
+
+def _unsupported_platform_message() -> str:
+    return "Error: WeChat automation is only supported on Windows."
+
+
 # ─── Windows API helpers ───
-user32 = ctypes.windll.user32
+user32 = ctypes.windll.user32 if IS_WINDOWS else None
+
+
+def _require_windows():
+    if not IS_WINDOWS:
+        raise RuntimeError(_unsupported_platform_message())
+
 
 def find_window_by_title(keyword: str):
     """Find a window whose title contains the given keyword (including hidden windows)."""
+    _require_windows()
     result = []
     WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.wintypes.HWND, ctypes.wintypes.LPARAM)
 
@@ -38,6 +53,7 @@ def find_window_by_title(keyword: str):
 
 def activate_window(hwnd):
     """Bring a window to the foreground, even if hidden in system tray."""
+    _require_windows()
     SW_SHOW = 5
     SW_RESTORE = 9
     SW_SHOWNORMAL = 1
@@ -240,6 +256,9 @@ class WeChatSendMessageTool(Tool):
 
     async def execute(self, contact_name: str, message: str, **kwargs) -> Any:
         """Use vision-agent loop to send a WeChat message."""
+        if not IS_WINDOWS:
+            return _unsupported_platform_message()
+
         try:
             # 1. Open/Focus WeChat
             matches = find_window_by_title("微信")
