@@ -1,35 +1,41 @@
-import asyncio
-import os
+import platform
 from typing import List, Dict, Any, Optional
 
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
+
+IS_WINDOWS = platform.system() == "Windows"
+
 
 class WindowsMCPClient:
     def __init__(self):
-        self.session: Optional[ClientSession] = None
+        self.session: Optional[Any] = None
         self._exit_stack = None
         self.tools_cache: List[Dict[str, Any]] = []
-        
+
     async def connect(self):
-        """Connect to the Windows-MCP server using uvx"""
-        # Ensure uvx is in PATH or specify full path if needed.
+        """Connect to the Windows-MCP server using uvx."""
+        if not IS_WINDOWS:
+            self.session = None
+            self.tools_cache = []
+            return
+
+        from contextlib import AsyncExitStack
+        from mcp import ClientSession, StdioServerParameters
+        from mcp.client.stdio import stdio_client
+
         server_params = StdioServerParameters(
             command="uvx",
             args=["windows-mcp"],
-            env=None # Inherit from OS
+            env=None,
         )
-        
-        from contextlib import AsyncExitStack
+
         self._exit_stack = AsyncExitStack()
-        
+
         try:
             stdio_transport = await self._exit_stack.enter_async_context(stdio_client(server_params))
             self.session = await self._exit_stack.enter_async_context(ClientSession(stdio_transport[0], stdio_transport[1]))
             await self.session.initialize()
             print("Connected to Windows-MCP server.")
-            
-            # Fetch tools
+
             tools_response = await self.session.list_tools()
             self.tools_cache = []
             for tool in tools_response.tools:
@@ -55,21 +61,19 @@ class WindowsMCPClient:
         return anthropic_tools
 
     async def call_tool(self, name: str, arguments: dict) -> dict:
-        """Execute a tool via the MCP session"""
+        """Execute a tool via the MCP session."""
         if not self.session:
             raise RuntimeError("WindowsMCPClient is not connected.")
-        
+
         try:
             result = await self.session.call_tool(name, arguments)
-            
-            # Normalize MCP result to a dictionary for our agent logic
+
             content_list = []
             for content in result.content:
                 text_val = getattr(content, 'text', str(content))
-                # Detect and strip massive base64 image strings from Snapshot Tool to prevent proxy 422 errors
                 if name == "Snapshot" and "iVBOR" in text_val and len(text_val) > 10000:
                     text_val = "[Windows-MCP Base64 Image removed by proxy to save context limit. Please rely on the DOM/Textual data.]"
-                
+
                 content_list.append({"type": content.type, "text": text_val})
 
             tool_output = {
@@ -90,5 +94,5 @@ class WindowsMCPClient:
             self._exit_stack = None
             self.session = None
 
-# Global instance
+
 mcp_client = WindowsMCPClient()

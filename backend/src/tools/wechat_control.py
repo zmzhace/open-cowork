@@ -1,7 +1,6 @@
 from src.tools.base import Tool
 from typing import Any, Optional
-import pyautogui
-import pyperclip
+import platform
 import time
 import subprocess
 import ctypes
@@ -9,16 +8,46 @@ import ctypes.wintypes
 import os
 import base64
 import json
-import mss
 import io
 from anthropic import AsyncAnthropic
 
 
+IS_WINDOWS = platform.system() == "Windows"
+user32 = ctypes.windll.user32 if IS_WINDOWS else None
+
+
+def _unsupported_platform_message() -> str:
+    return "Error: WeChat automation is only supported on Windows."
+
+
+def _require_windows():
+    if not IS_WINDOWS or user32 is None:
+        raise RuntimeError(_unsupported_platform_message())
+
+
+def _require_pyautogui():
+    import pyautogui
+
+    return pyautogui
+
+
+def _require_pyperclip():
+    import pyperclip
+
+    return pyperclip
+
+
+def _require_mss():
+    import mss
+
+    return mss
+
+
 # ─── Windows API helpers ───
-user32 = ctypes.windll.user32
 
 def find_window_by_title(keyword: str):
     """Find a window whose title contains the given keyword (including hidden windows)."""
+    _require_windows()
     result = []
     WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.wintypes.HWND, ctypes.wintypes.LPARAM)
 
@@ -38,25 +67,20 @@ def find_window_by_title(keyword: str):
 
 def activate_window(hwnd):
     """Bring a window to the foreground, even if hidden in system tray."""
+    _require_windows()
     SW_SHOW = 5
     SW_RESTORE = 9
     SW_SHOWNORMAL = 1
 
-    # Show the window first (in case it's hidden in tray)
     user32.ShowWindow(hwnd, SW_SHOW)
-    # Restore if minimized
     if user32.IsIconic(hwnd):
         user32.ShowWindow(hwnd, SW_RESTORE)
     else:
         user32.ShowWindow(hwnd, SW_SHOWNORMAL)
 
-    # Windows blocks SetForegroundWindow for background processes.
-    # Workaround: simulate an Alt key press to trick Windows into allowing it.
-    user32.keybd_event(0x12, 0, 0, 0)  # Alt key down
+    user32.keybd_event(0x12, 0, 0, 0)
     user32.SetForegroundWindow(hwnd)
-    user32.keybd_event(0x12, 0, 2, 0)  # Alt key up
-
-    # Additional attempt
+    user32.keybd_event(0x12, 0, 2, 0)
     user32.BringWindowToTop(hwnd)
 
 
@@ -77,10 +101,10 @@ def find_wechat_exe():
 # ─── Vision Agent ───
 def take_screenshot_base64() -> str:
     """Take a screenshot and return as base64-encoded PNG."""
+    mss = _require_mss()
     with mss.mss() as sct:
-        monitor = sct.monitors[1]  # Primary monitor
+        monitor = sct.monitors[1]
         img = sct.grab(monitor)
-        # Convert to PNG bytes
         from PIL import Image
         pil_img = Image.frombytes("RGB", img.size, img.bgra, "raw", "BGRX")
         buffer = io.BytesIO()
@@ -194,6 +218,7 @@ def execute_action(action: dict) -> str:
     """Execute an action returned by the vision agent."""
     act = action.get("action", "")
     desc = action.get("description", "")
+    pyautogui = _require_pyautogui()
 
     if act == "click":
         x, y = action["x"], action["y"]
@@ -202,6 +227,7 @@ def execute_action(action: dict) -> str:
 
     elif act == "type":
         text = action["text"]
+        pyperclip = _require_pyperclip()
         pyperclip.copy(text)
         pyautogui.hotkey('ctrl', 'v')
         return f"Typed: {text}: {desc}"
@@ -240,6 +266,9 @@ class WeChatSendMessageTool(Tool):
 
     async def execute(self, contact_name: str, message: str, **kwargs) -> Any:
         """Use vision-agent loop to send a WeChat message."""
+        if not IS_WINDOWS:
+            return _unsupported_platform_message()
+
         try:
             # 1. Open/Focus WeChat
             matches = find_window_by_title("微信")
@@ -278,26 +307,20 @@ class WeChatSendMessageTool(Tool):
             history = []
             max_steps = 10
             log = []
-            prev_actions = []  # Track recent actions for loop detection
+            prev_actions = []
 
             for step in range(max_steps):
-                time.sleep(1.5)  # Wait for UI to settle
-
-                # Take screenshot
+                time.sleep(1.5)
                 screenshot_b64 = take_screenshot_base64()
 
-                # Build context about previous actions to avoid loops
                 prev_context = ""
                 if prev_actions:
                     prev_context = "\n你之前已经执行的操作：" + "; ".join(prev_actions[-3:])
-                    # Detect if stuck in a loop
                     if len(prev_actions) >= 2 and prev_actions[-1] == prev_actions[-2]:
                         prev_context += "\n【警告】你在重复同一操作！请换一种方法。如果微信窗口没有打开，试一试搜索功能或点击其他位置。"
 
-                # Ask Claude what to do
                 action = await vision_agent_step(client, model, task + prev_context, screenshot_b64, history)
 
-                # Log the action
                 action_desc = action.get("description", str(action))
                 log.append(f"Step {step + 1}: {action.get('action', '?')} - {action_desc}")
 
@@ -307,15 +330,12 @@ class WeChatSendMessageTool(Tool):
                 if action["action"] == "error":
                     return f"Agent error: {action_desc}\nLog:\n" + "\n".join(log)
 
-                # Execute the action
                 result = execute_action(action)
                 log.append(f"  -> {result}")
 
-                # Track for loop detection
                 action_key = f"{action.get('action')}@{action.get('x','')},{action.get('y','')}{action.get('key','')}{action.get('text','')}"
                 prev_actions.append(action_key)
 
-                # Add to history for context (text only, not images, to save tokens)
                 history.append({
                     "role": "user",
                     "content": f"[截图已发送] 当前任务：{task}"
@@ -330,3 +350,4 @@ class WeChatSendMessageTool(Tool):
         except Exception as e:
             import traceback
             return f"Error: {str(e)}\n{traceback.format_exc()}"
+
