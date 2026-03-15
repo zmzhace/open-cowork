@@ -1,6 +1,6 @@
 # 🚀 Open-Cowork: The Next-Gen Agentic Desktop Application
 
-Open-Cowork is a high-performance, open-source **Computer Agent** powered by Claude 3.5 Sonnet. Designed for extreme efficiency, safety, and visual fidelity, it transforms complex desktop automation into a seamless conversational experience.
+Open-Cowork is a high-performance, open-source **Computer Agent** powered by Claude 4.6 Sonnet. Designed for extreme efficiency, safety, and visual fidelity, it transforms complex desktop automation into a seamless conversational experience.
 
 ---
 
